@@ -79,7 +79,11 @@ function App() {
 
   const handleUpdateItem = async (e: any) => {
     e.preventDefault();
-    const url = editType === 'ingredient' ? `${API_URL}/ingredients/${editingItem.id}` : `${API_URL}/products/${editingItem.id}`;
+    let url = '';
+    if (editType === 'ingredient') url = `${API_URL}/ingredients/${editingItem.id}`;
+    else if (editType === 'product') url = `${API_URL}/products/${editingItem.id}`;
+    else if (editType === 'sale') url = `${API_URL}/sales/${editingItem.id}`;
+
     await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -383,9 +387,10 @@ function App() {
                       <div className="font-bold text-slate-800 text-lg">{s.productName}</div>
                       <div className="text-xs font-bold text-slate-400 uppercase">{new Date(s.date).toLocaleDateString()}</div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end gap-2">
                       <div className="font-black text-orange-600 text-xl">R$ {formatNum(s.totalValue)}</div>
                       <div className="text-xs font-bold text-slate-500 uppercase">Qtd: {formatNum(s.quantity)}</div>
+                      <button onClick={() => openEditModal(s, 'sale')} className="text-blue-500 hover:text-blue-700 font-bold text-[10px] uppercase border border-blue-100 px-2 py-1 rounded-md">EDITAR</button>
                     </div>
                   </div>
                 ))}
@@ -427,6 +432,7 @@ function App() {
                   <div key={p.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200 gap-4">
                     <div className="font-bold text-slate-700 text-lg uppercase tracking-wide">{p.name} <span className="text-sm text-slate-400 font-medium ml-2">(Saldo: {formatNum(p.quantity)})</span></div>
                     <div className="flex items-center gap-3">
+                      <button onClick={() => openEditModal(p, 'product')} className="text-blue-500 hover:text-blue-700 font-bold text-[10px] uppercase border border-blue-100 px-2 py-1 rounded-md mr-2">AJUSTAR</button>
                       <div className="text-slate-500 font-bold uppercase text-xs">Preço Venda (R$):</div>
                       <input
                         type="number"
@@ -508,6 +514,19 @@ function App() {
                       />
                     </div>
                   )}
+                  {editType === 'sale' && (
+                    <div>
+                      <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Valor Total (R$)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-orange-500 outline-none font-bold text-slate-700 bg-slate-50"
+                        value={editingItem.totalValue}
+                        onChange={e => setEditingItem({ ...editingItem, totalValue: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-3 pt-4">
                   <div className="flex gap-3">
@@ -517,8 +536,12 @@ function App() {
                   <button
                     type="button"
                     onClick={async () => {
-                      if (confirm(`Tem certeza que deseja apagar permanentemente: ${editingItem.name}?`)) {
-                        const url = editType === 'ingredient' ? `${API_URL}/ingredients/${editingItem.id}` : `${API_URL}/products/${editingItem.id}`;
+                      if (confirm(`Tem certeza que deseja apagar permanentemente este registro?`)) {
+                        let url = '';
+                        if (editType === 'ingredient') url = `${API_URL}/ingredients/${editingItem.id}`;
+                        else if (editType === 'product') url = `${API_URL}/products/${editingItem.id}`;
+                        else if (editType === 'sale') url = `${API_URL}/sales/${editingItem.id}`;
+                        
                         await fetch(url, { method: 'DELETE' });
                         setShowEditModal(false);
                         fetchData();
@@ -537,7 +560,5 @@ function App() {
     </div>
   );
 }
-
-export default App;
 
 export default App;
