@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Ingredient {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  quantity  Float    // in kg
+  unitCost  Float    // cost per kg
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  quantity  Float    // kg (for pulp) or units (for liqueur)
+  unitPrice Float
+  type      String   // "POLPA" or "LICOR"
+  updatedAt DateTime @updatedAt
+}
+
+model Production {
+  id              Int      @id @default(autoincrement())
+  date            DateTime @default(now())
+  productName     String
+  ingredientName  String
+  ingredientUsed  Float    // kg
+  outputQuantity  Float    // kg or units
+  productionType  String   // "POLPA" or "LICOR"
+}
+
+model Sale {
+  id          Int      @id @default(autoincrement())
+  date        DateTime @default(now())
+  productName String
+  quantity    Float
+  totalValue  Float
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String
+}
