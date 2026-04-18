@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 
 const API_URL = 'http://localhost:3000';
 
+const formatNum = (num: any) => {
+  return parseFloat(num).toString().replace('.', ',');
+};
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginData, setLoginData] = useState({ username: '', password: '' });
@@ -14,9 +18,14 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   // Form states
-  const [newIngredient, setNewIngredient] = useState({ name: '', quantity: '', unitCost: '' });
+  const [newIngredient, setNewIngredient] = useState({ id: null, name: '', quantity: '', unitCost: '' });
   const [newProduction, setNewProduction] = useState({ productName: '', ingredientName: '', ingredientUsed: '', outputQuantity: '' });
   const [newSale, setNewSale] = useState({ productName: '', quantity: '', totalValue: '' });
+
+  // Modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editType, setEditType] = useState(''); // 'ingredient' or 'product'
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -62,10 +71,31 @@ function App() {
     }
   };
 
+  const openEditModal = (item: any, type: string) => {
+    setEditingItem({ ...item });
+    setEditType(type);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateItem = async (e: any) => {
+    e.preventDefault();
+    const url = editType === 'ingredient' ? `${API_URL}/ingredients/${editingItem.id}` : `${API_URL}/products/${editingItem.id}`;
+    await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editingItem),
+    });
+    setShowEditModal(false);
+    fetchData();
+  };
+
   const handleAddIngredient = async (e: any) => {
     e.preventDefault();
-    await fetch(`${API_URL}/ingredients`, {
-      method: 'POST',
+    const url = newIngredient.id ? `${API_URL}/ingredients/${newIngredient.id}` : `${API_URL}/ingredients`;
+    const method = newIngredient.id ? 'PUT' : 'POST';
+
+    await fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: newIngredient.name,
@@ -73,8 +103,15 @@ function App() {
         unitCost: parseFloat(newIngredient.unitCost as string)
       }),
     });
-    setNewIngredient({ name: '', quantity: '', unitCost: '' });
+    setNewIngredient({ id: null, name: '', quantity: '', unitCost: '' });
     fetchData();
+  };
+
+  const handleDeleteIngredient = async (id: number) => {
+    if (confirm('Tem certeza que deseja excluir esta fruta do estoque?')) {
+      await fetch(`${API_URL}/ingredients/${id}`, { method: 'DELETE' });
+      fetchData();
+    }
   };
 
   const handleProduction = async (e: any, type: string) => {
@@ -122,7 +159,7 @@ function App() {
     return (
       <div className="min-h-screen bg-orange-600 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
-          <h1 className="text-2xl font-bold text-center text-orange-600 mb-6">Sistema de Gestão <br /> Doces Sabores</h1>
+          <h1 className="text-2xl font-bold text-center text-orange-600 mb-6 uppercase tracking-tight">Acesso ao ERP</h1>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold mb-1 text-slate-600">Usuário</label>
@@ -148,7 +185,7 @@ function App() {
               ENTRAR NO SISTEMA
             </button>
           </form>
-          <p className="text-center text-slate-400 text-xs mt-6 uppercase tracking-widest font-bold italic">v1.2</p>
+          <p className="text-center text-slate-400 text-xs mt-6 uppercase tracking-widest font-bold italic">Polpas & Licores v2.0</p>
         </div>
       </div>
     );
@@ -158,7 +195,7 @@ function App() {
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       <header className="bg-orange-600 text-white p-6 shadow-md flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Fábrica de Polpas & Licores</h1>
+          <h1 className="text-2xl font-bold">Doces Sabores</h1>
           <p className="text-orange-100 opacity-90 text-sm">Controle de Estoque e Produção</p>
         </div>
         <button onClick={() => setIsLoggedIn(false)} className="bg-orange-700 hover:bg-orange-800 px-4 py-2 rounded-lg text-xs font-bold uppercase transition-colors">SAIR</button>
@@ -167,10 +204,11 @@ function App() {
       <nav className="sticky top-0 z-10 bg-white border-b shadow-sm overflow-x-auto">
         <div className="max-w-4xl mx-auto flex p-2 gap-2">
           {[
-            { id: 'estoque', label: '🍎 Comprar Fruta' },
-            { id: 'polpas', label: '🧊 Fazer Polpa' },
-            { id: 'licores', label: '🍷 Fazer Licor' },
-            { id: 'vendas', label: '💰 Vender' }
+            { id: 'estoque', label: 'Frutas' },
+            { id: 'polpas', label: 'Polpas' },
+            { id: 'licores', label: 'Licor' },
+            { id: 'vendas', label: 'Vender' },
+            { id: 'financeiro', label: 'Financeiro' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -189,7 +227,9 @@ function App() {
         {activeTab === 'estoque' && (
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800">Registrar Compra de Fruta</h2>
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800">
+                {newIngredient.id ? 'Editando Fruta' : 'Registrar Compra de Fruta'}
+              </h2>
               <form onSubmit={handleAddIngredient} className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="block text-sm font-semibold mb-1 text-slate-600">Nome da Fruta</label>
@@ -198,14 +238,21 @@ function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold mb-1 text-slate-600">Quantidade (kg)</label>
-                    <input type="number" step="0.01" placeholder="0.00" className="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-orange-400 outline-none transition-colors" value={newIngredient.quantity} onChange={e => setNewIngredient({ ...newIngredient, quantity: e.target.value })} required />
+                    <input type="number" step="any" placeholder="0.00" className="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-orange-400 outline-none transition-colors" value={newIngredient.quantity} onChange={e => setNewIngredient({ ...newIngredient, quantity: e.target.value })} required />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-1 text-slate-600">Preço Pago (R$ total)</label>
-                    <input type="number" step="0.01" placeholder="0.00" className="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-orange-400 outline-none transition-colors" value={newIngredient.unitCost} onChange={e => setNewIngredient({ ...newIngredient, unitCost: e.target.value })} required />
+                    <input type="number" step="any" placeholder="0.00" className="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-orange-400 outline-none transition-colors" value={newIngredient.unitCost} onChange={e => setNewIngredient({ ...newIngredient, unitCost: e.target.value })} required />
                   </div>
                 </div>
-                <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all uppercase tracking-wider">SALVAR NO ESTOQUE</button>
+                <div className="flex gap-2">
+                  <button type="submit" className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all uppercase tracking-wider">
+                    {newIngredient.id ? 'ATUALIZAR' : 'SALVAR NO ESTOQUE'}
+                  </button>
+                  {newIngredient.id && (
+                    <button type="button" onClick={() => setNewIngredient({ id: null, name: '', quantity: '', unitCost: '' })} className="bg-slate-200 px-6 rounded-xl font-bold text-slate-600">CANCELAR</button>
+                  )}
+                </div>
               </form>
             </div>
 
@@ -217,13 +264,19 @@ function App() {
                     <tr>
                       <th className="p-4 text-sm font-bold text-slate-500 uppercase tracking-wider">Insumo</th>
                       <th className="p-4 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Saldo</th>
+                      <th className="p-4 text-sm font-bold text-slate-500 uppercase tracking-wider text-center">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {ingredients.map((ing: any) => (
                       <tr key={ing.id} className="hover:bg-orange-50/30 transition-colors">
                         <td className="p-4 font-semibold text-slate-700">{ing.name}</td>
-                        <td className="p-4 text-right font-black text-orange-600 text-lg">{ing.quantity.toFixed(2)} kg</td>
+                        <td className="p-4 text-right font-black text-orange-600 text-lg">{formatNum(ing.quantity)} kg</td>
+                        <td className="p-4 text-center">
+                          <div className="flex justify-center gap-3">
+                            <button onClick={() => openEditModal(ing, 'ingredient')} className="text-blue-500 hover:text-blue-700 font-bold text-xs uppercase transition-colors">EDITAR</button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -247,16 +300,50 @@ function App() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold mb-1 text-slate-600">Quantos kg de fruta vai usar?</label>
-                  <input type="number" step="0.01" placeholder="Ex: 5" className="w-full border-2 border-slate-100 p-3 rounded-xl outline-none focus:border-orange-400" value={newProduction.ingredientUsed} onChange={e => setNewProduction({ ...newProduction, ingredientUsed: e.target.value })} required />
+                  <input type="number" step="any" placeholder="Ex: 5" className="w-full border-2 border-slate-100 p-3 rounded-xl outline-none focus:border-orange-400" value={newProduction.ingredientUsed} onChange={e => setNewProduction({ ...newProduction, ingredientUsed: e.target.value })} required />
                 </div>
                 <div className="p-5 bg-orange-50/50 rounded-2xl border-2 border-dashed border-orange-200">
                   <label className="block text-sm font-semibold mb-1 text-slate-700">Nome do Produto Final</label>
                   <input type="text" placeholder={`Ex: ${activeTab === 'polpas' ? 'Polpa de Manga' : 'Licor de Jabuticaba'}`} className="w-full border-2 border-white p-3 rounded-xl mb-4 shadow-sm" value={newProduction.productName} onChange={e => setNewProduction({ ...newProduction, productName: e.target.value })} required />
-                  <label className="block text-sm font-semibold mb-1 text-slate-700">Quanto rendeu? ({activeTab === 'polpas' ? 'kg' : 'garrafas'})</label>
-                  <input type="number" step="0.01" placeholder="0" className="w-full border-2 border-white p-3 rounded-xl shadow-sm" value={newProduction.outputQuantity} onChange={e => setNewProduction({ ...newProduction, outputQuantity: e.target.value })} required />
+                  <label className="block text-sm font-semibold mb-1 text-slate-700">Quanto rendeu? ({activeTab === 'polpas' ? 'unidades' : 'garrafas'})</label>
+                  <input type="number" step="any" placeholder="0" className="w-full border-2 border-white p-3 rounded-xl shadow-sm" value={newProduction.outputQuantity} onChange={e => setNewProduction({ ...newProduction, outputQuantity: e.target.value })} required />
                 </div>
                 <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider">FINALIZAR PRODUÇÃO</button>
               </form>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <h2 className="text-lg font-bold mb-4 text-orange-600 uppercase tracking-tight">Produtos em Estoque ({activeTab})</h2>
+              <div className="overflow-hidden rounded-xl border border-slate-100">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="p-4 text-sm font-bold text-slate-500 uppercase tracking-wider">Produto</th>
+                      <th className="p-4 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Saldo</th>
+                      <th className="p-4 text-sm font-bold text-slate-500 uppercase tracking-wider text-center">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {products.filter((p: any) => p.type === (activeTab === 'polpas' ? 'POLPA' : 'LICOR')).map((p: any) => (
+                      <tr key={p.id} className="hover:bg-orange-50/30 transition-colors">
+                        <td className="p-4 font-semibold text-slate-700">{p.name}</td>
+                        <td className="p-4 text-right font-black text-orange-600 text-lg">
+                          {formatNum(p.quantity)} {activeTab === 'polpas' ? 'un' : 'gar'}
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="flex justify-center gap-3">
+                            <button
+                              onClick={() => openEditModal(p, 'product')}
+                              className="text-blue-500 hover:text-blue-700 font-bold text-xs uppercase transition-colors"
+                            >
+                              EDITAR
+                            </button>
+                          </div>
+                        </td>                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -276,14 +363,14 @@ function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold mb-1 text-slate-600">Quantidade</label>
-                    <input type="number" step="0.01" className="w-full border-2 border-slate-100 p-3 rounded-xl outline-none focus:border-orange-400" value={newSale.quantity} onChange={e => setNewSale({ ...newSale, quantity: e.target.value })} required />
+                    <input type="number" step="any" className="w-full border-2 border-slate-100 p-3 rounded-xl outline-none focus:border-orange-400" value={newSale.quantity} onChange={e => setNewSale({ ...newSale, quantity: e.target.value })} required />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-1 text-slate-600">Preço Total (R$)</label>
-                    <input type="number" step="0.01" className="w-full border-2 border-slate-100 p-3 rounded-xl outline-none focus:border-orange-400" value={newSale.totalValue} onChange={e => setNewSale({ ...newSale, totalValue: e.target.value })} required />
+                    <input type="number" step="any" className="w-full border-2 border-slate-100 p-3 rounded-xl outline-none focus:border-orange-400" value={newSale.totalValue} onChange={e => setNewSale({ ...newSale, totalValue: e.target.value })} required />
                   </div>
                 </div>
-                <button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider">CONFIRMAR VENDA</button>
+                <button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider">CONFIRMAR VENDA</button>
               </form>
             </div>
 
@@ -297,8 +384,65 @@ function App() {
                       <div className="text-xs font-bold text-slate-400 uppercase">{new Date(s.date).toLocaleDateString()}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-black text-orange-600 text-xl">R$ {s.totalValue.toFixed(2)}</div>
-                      <div className="text-xs font-bold text-slate-500 uppercase">Qtd: {s.quantity}</div>
+                      <div className="font-black text-orange-600 text-xl">R$ {formatNum(s.totalValue)}</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase">Qtd: {formatNum(s.quantity)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'financeiro' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Total Investido</div>
+                <div className="text-2xl font-black text-slate-800">
+                  R$ {formatNum(ingredients.reduce((acc: any, ing: any) => acc + (ing.quantity * ing.unitCost), 0))}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">Valor em frutas no estoque</div>
+              </div>
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Potencial de Venda</div>
+                <div className="text-2xl font-black text-orange-600">
+                  R$ {formatNum(products.reduce((acc: any, p: any) => acc + (p.quantity * p.unitPrice), 0))}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">Valor total se vender tudo</div>
+              </div>
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Lucro Esperado</div>
+                <div className="text-2xl font-black text-green-600">
+                  R$ {formatNum(products.reduce((acc: any, p: any) => acc + (p.quantity * p.unitPrice), 0) - ingredients.reduce((acc: any, ing: any) => acc + (ing.quantity * ing.unitCost), 0))}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">Estimativa de lucro bruto</div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <h2 className="text-lg font-bold mb-4 text-slate-800 uppercase tracking-tight">Definir Preços de Venda</h2>
+              <p className="text-sm text-slate-500 mb-6 font-medium uppercase">Ajuste o valor pelo qual você vende cada produto:</p>
+              <div className="space-y-4">
+                {products.map((p: any) => (
+                  <div key={p.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200 gap-4">
+                    <div className="font-bold text-slate-700 text-lg uppercase tracking-wide">{p.name} <span className="text-sm text-slate-400 font-medium ml-2">(Saldo: {formatNum(p.quantity)})</span></div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-slate-500 font-bold uppercase text-xs">Preço Venda (R$):</div>
+                      <input
+                        type="number"
+                        step="any"
+                        className="w-24 border-2 border-white p-2 rounded-xl shadow-sm focus:border-orange-400 outline-none font-bold text-orange-600"
+                        value={p.unitPrice}
+                        onChange={async (e) => {
+                          const newPrice = parseFloat(e.target.value);
+                          await fetch(`${API_URL}/products/${p.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ unitPrice: newPrice }),
+                          });
+                          fetchData();
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -307,8 +451,93 @@ function App() {
           </div>
         )}
       </main>
+
+      {/* MODAL DE EDIÇÃO BONITO */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowEditModal(false)}></div>
+          <div className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border-t-8 border-orange-500 animate-in zoom-in-95 duration-200">
+            <div className="p-8">
+              <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-6">Ajustar Registro</h2>
+              <form onSubmit={handleUpdateItem} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Nome do Item</label>
+                  <input
+                    type="text"
+                    className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-orange-500 outline-none font-bold text-slate-700 bg-slate-50"
+                    value={editingItem.name}
+                    onChange={e => setEditingItem({ ...editingItem, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Quantidade</label>
+                    <input
+                      type="number"
+                      step="any"
+                      className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-orange-500 outline-none font-bold text-slate-700 bg-slate-50"
+                      value={editingItem.quantity}
+                      onChange={e => setEditingItem({ ...editingItem, quantity: e.target.value })}
+                      required
+                    />
+                  </div>
+                  {editType === 'ingredient' && (
+                    <div>
+                      <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Preço (R$)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-orange-500 outline-none font-bold text-slate-700 bg-slate-50"
+                        value={editingItem.unitCost}
+                        onChange={e => setEditingItem({ ...editingItem, unitCost: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
+                  {editType === 'product' && (
+                    <div>
+                      <label className="block text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Venda (R$)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-orange-500 outline-none font-bold text-slate-700 bg-slate-50"
+                        value={editingItem.unitPrice}
+                        onChange={e => setEditingItem({ ...editingItem, unitPrice: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-3 pt-4">
+                  <div className="flex gap-3">
+                    <button type="submit" className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-95 uppercase">SALVAR</button>
+                    <button type="button" onClick={() => setShowEditModal(false)} className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold rounded-2xl transition-all uppercase">SAIR</button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (confirm(`Tem certeza que deseja apagar permanentemente: ${editingItem.name}?`)) {
+                        const url = editType === 'ingredient' ? `${API_URL}/ingredients/${editingItem.id}` : `${API_URL}/products/${editingItem.id}`;
+                        await fetch(url, { method: 'DELETE' });
+                        setShowEditModal(false);
+                        fetchData();
+                      }
+                    }}
+                    className="w-full py-3 text-red-500 hover:text-red-700 font-bold text-xs uppercase transition-colors border-2 border-transparent hover:border-red-100 rounded-xl"
+                  >
+                    Excluir Registro permanentemente
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+export default App;
 
 export default App;

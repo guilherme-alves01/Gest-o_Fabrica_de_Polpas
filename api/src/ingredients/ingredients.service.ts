@@ -6,8 +6,6 @@ export class IngredientsService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: { name: string; quantity: number; unitCost: number }) {
-    // Upsert logic: if ingredient with name exists, update it by adding quantity and recalculating average cost or just updating.
-    // Let's keep it simple: find by name, update quantity and cost.
     const existing = await this.prisma.ingredient.findUnique({
       where: { name: data.name },
     });
@@ -17,7 +15,7 @@ export class IngredientsService {
         where: { name: data.name },
         data: {
           quantity: existing.quantity + data.quantity,
-          unitCost: data.unitCost, // Update to latest cost
+          unitCost: data.unitCost,
         },
       });
     }
@@ -28,6 +26,25 @@ export class IngredientsService {
   }
 
   async findAll() {
-    return this.prisma.ingredient.findMany();
+    return this.prisma.ingredient.findMany({
+      orderBy: { name: 'asc' }
+    });
+  }
+
+  async update(id: number, data: any) {
+    return this.prisma.ingredient.update({
+      where: { id },
+      data: {
+        name: data.name,
+        quantity: parseFloat(data.quantity),
+        unitCost: parseFloat(data.unitCost),
+      },
+    });
+  }
+
+  async remove(id: number) {
+    return this.prisma.ingredient.delete({
+      where: { id },
+    });
   }
 }
