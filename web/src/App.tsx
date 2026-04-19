@@ -11,10 +11,9 @@ function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
 
   const [activeTab, setActiveTab] = useState('estoque');
-  const [ingredients, setIngredients] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [productionHistory, setProductionHistory] = useState([]);
-  const [salesHistory, setSalesHistory] = useState([]);
+  const [ingredients, setIngredients] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [salesHistory, setSalesHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Form states
@@ -54,15 +53,13 @@ function App() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [ing, prod, hist, sales] = await Promise.all([
+      const [ing, prod, sales] = await Promise.all([
         fetch(`${API_URL}/ingredients`).then(res => res.json()),
         fetch(`${API_URL}/products`).then(res => res.json()),
-        fetch(`${API_URL}/production`).then(res => res.json()),
         fetch(`${API_URL}/sales`).then(res => res.json()),
       ]);
       setIngredients(Array.isArray(ing) ? ing : []);
       setProducts(Array.isArray(prod) ? prod : []);
-      setProductionHistory(Array.isArray(hist) ? hist : []);
       setSalesHistory(Array.isArray(sales) ? sales : []);
     } catch (err) {
       console.error("Erro ao carregar dados", err);
@@ -111,12 +108,7 @@ function App() {
     fetchData();
   };
 
-  const handleDeleteIngredient = async (id: number) => {
-    if (confirm('Tem certeza que deseja excluir esta fruta do estoque?')) {
-      await fetch(`${API_URL}/ingredients/${id}`, { method: 'DELETE' });
-      fetchData();
-    }
-  };
+
 
   const handleProduction = async (e: any, type: string) => {
     e.preventDefault();
