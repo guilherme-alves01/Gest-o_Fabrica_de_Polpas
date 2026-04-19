@@ -155,7 +155,7 @@ function App() {
     return (
       <div className="min-h-screen bg-orange-600 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
-          <h1 className="text-2xl font-bold text-center text-orange-600 mb-6 uppercase tracking-tight">Acesso ao ERP</h1>
+          <h1 className="text-2xl font-bold text-center text-orange-600 mb-6 uppercase tracking-tight">Sitema de Gestão<br />Doces Sabores</h1>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold mb-1 text-slate-600">Usuário</label>
@@ -533,7 +533,7 @@ function App() {
                         if (editType === 'ingredient') url = `${API_URL}/ingredients/${editingItem.id}`;
                         else if (editType === 'product') url = `${API_URL}/products/${editingItem.id}`;
                         else if (editType === 'sale') url = `${API_URL}/sales/${editingItem.id}`;
-                        
+
                         await fetch(url, { method: 'DELETE' });
                         setShowEditModal(false);
                         fetchData();
