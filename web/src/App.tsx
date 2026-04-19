@@ -181,7 +181,7 @@ function App() {
               ENTRAR NO SISTEMA
             </button>
           </form>
-          <p className="text-center text-slate-400 text-xs mt-6 uppercase tracking-widest font-bold italic">Polpas & Licores v2.0</p>
+          <p className="text-center text-slate-400 text-xs mt-6 uppercase tracking-widest font-bold italic">Versão 1.2</p>
         </div>
       </div>
     );

@@ -6,6 +6,7 @@ async function main() {
   const users = [
     { username: 'thais', password: 'l1c0r.X' },
     { username: 'guilherme', password: 'br4s1l.X' },
+    { username: 'admin', password: 'admin' },
   ];
 
   for (const user of users) {
