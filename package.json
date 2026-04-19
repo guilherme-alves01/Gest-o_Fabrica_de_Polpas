@@ -1,0 +1,12 @@
+{
+  "name": "erp-frutas-licor-monorepo",
+  "version": "1.0.0",
+  "description": "Root package to manage API and Web",
+  "scripts": {
+    "install:all": "npm install --prefix api && npm install --prefix web",
+    "dev": "npx concurrently -n \"API,WEB\" -c \"cyan,green\" \"npm run start:dev --prefix api\" \"npm run dev --prefix web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
