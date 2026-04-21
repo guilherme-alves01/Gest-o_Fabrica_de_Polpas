@@ -254,8 +254,8 @@ function App() {
       {/* MOBILE OVERLAY & MENU */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
-          <div className="relative bg-gradient-to-b from-orange-500 to-green-900 text-white w-80 h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-200">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsMobileMenuOpen(false)}></div>
+          <div className="relative bg-gradient-to-b from-orange-500 to-green-900 text-white w-80 h-full shadow-2xl flex flex-col animate-slide-in-left">
             <div className="p-6 flex items-center justify-between mt-2">
               <div className="flex items-center gap-3">
                 <img src="/logo.png" alt="Logo" className="w-56 object-contain drop-shadow-2xl" />
@@ -313,7 +313,7 @@ function App() {
         </header>
 
         {/* SCROLLABLE MAIN */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 relative">
+        <main key={activeTab} className="flex-1 overflow-y-auto p-4 md:p-8 relative animate-slide-up">
           {/* Subtle Watermark background */}
           <div className="fixed bottom-0 right-0 pointer-events-none opacity-[0.03] z-0 transform translate-x-1/4 translate-y-1/4">
             <Leaf size={800} />
@@ -334,7 +334,7 @@ function App() {
               <>
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center">
+                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center active:scale-95 transition-all duration-200 cursor-pointer hover:shadow-md">
                     <div>
                       <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Insumos Ativos</p>
                       <h3 className="text-4xl font-black text-slate-800">{ingredients.length}</h3>
@@ -343,7 +343,7 @@ function App() {
                       <Apple size={32} />
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center">
+                  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center active:scale-95 transition-all duration-200 cursor-pointer hover:shadow-md">
                     <div>
                       <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Lotes Críticos</p>
                       <h3 className="text-4xl font-black text-slate-800">{lowStockIngredients.length}</h3>
